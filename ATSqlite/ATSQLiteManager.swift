@@ -14,7 +14,7 @@
     import AppKit
 #endif
 
-typealias TransactionQueryBlock = ()->(ATSQLiteError?)
+typealias TransactionQueryBlock = ()->(Bool?)
 
 struct QueryResult {
     var errNum:ATSQLiteError?
@@ -23,12 +23,21 @@ struct QueryResult {
 }
 
 
-public enum ATSQLiteError:Int32 {
-    case GG
+public enum ATSQLiteError:Int {
+    case TRANSACTION_ERROR
+    case SQLITE_OPEN_CONNECTION_ERROR
+    case SQLITE_CLOSE_CONNECTION_ERROR
+    case SQLITE_NULL_CONNECTION_ERROR
+    case SQLITE_PREPARE_QUERY_ERROR
+    case SQLITE_STEP_QUERY_ERROR
+    case SQLITE_CREATE_RESULTSET_ERROR
+    
 }
 
 
-public enum ATSQLiteQueryType:Int{
+
+
+public enum ATSQLiteQueryType:Int32{
     case Unknown
     case Select
     case Update
@@ -44,6 +53,9 @@ class ATSQLiteManager: NSObject {
     private var stmt:OpaquePointer?
     private var errString:UnsafeMutablePointer<Int8>?
 
+//    private var tranOperationQueue:OperationQueue?
+    private var operationqueue:OperationQueue?
+    
     public static let shared:ATSQLiteManager = {
         let ref = ATSQLiteManager()
         ref.openConnection()
@@ -52,12 +64,21 @@ class ATSQLiteManager: NSObject {
     public override init()
     {
         super.init()
+//        self.tranOperationQueue = OperationQueue()
+//        self.tranOperationQueue?.maxConcurrentOperationCount = 1
+        self.operationqueue = OperationQueue()
+        self.operationqueue?.maxConcurrentOperationCount = 1
     }
     
     public func closeConnection()
     {
-        DispatchQueue.main.async {
-            sqlite3_close(self.connection)
+        self.operationqueue!.isSuspended = true
+        self.operationqueue!.waitUntilAllOperationsAreFinished()
+        
+        if(sqlite3_close(self.connection) != SQLITE_OK)
+        {
+            NSLog("Error Code: %d",ATSQLiteError.SQLITE_CLOSE_CONNECTION_ERROR.rawValue)
+            assert(false)
         }
     }
     
@@ -68,11 +89,13 @@ class ATSQLiteManager: NSObject {
             self.closeConnection()
         }
         
-        if sqlite3_open(filePath, &self.connection) != SQLITE_OK
+        if(sqlite3_open(filePath, &self.connection) != SQLITE_OK)
         {
-            NSLog("SQLite Connection Failed.")
+            NSLog("Error Code: %d",ATSQLiteError.SQLITE_OPEN_CONNECTION_ERROR.rawValue)
             assert(false)
         }
+        
+        self.operationqueue!.isSuspended = false
     }
     
     private func openConnection()
@@ -161,6 +184,7 @@ class ATSQLiteManager: NSObject {
         if(flag != SQLITE_DONE)
         {
             print(sqlite3_errmsg(self.connection))
+            NSLog("Error Code: %d",ATSQLiteError.SQLITE_CREATE_RESULTSET_ERROR.rawValue)
             assert(false)
         }
     }
@@ -170,6 +194,7 @@ class ATSQLiteManager: NSObject {
         if(sqlite3_step(stmt) != SQLITE_DONE)
         {
             print(sqlite3_errmsg(self.connection))
+            NSLog("Error Code: %d",ATSQLiteError.SQLITE_STEP_QUERY_ERROR.rawValue)
             assert(false)
         }else
         {
@@ -179,7 +204,6 @@ class ATSQLiteManager: NSObject {
     
     private func prepareQuery(query:QueryString) -> QueryResult
     {
-        if(self.connection == nil){ assert(false) }
         
         if(query.string == nil || query.queryType == nil){ assert(false) }
         
@@ -193,8 +217,9 @@ class ATSQLiteManager: NSObject {
         
         if(code != SQLITE_OK && code != SQLITE_ROW && code != SQLITE_DONE)
         {
-            NSLog("error in prepare query")
-            queryResult.errNum = ATSQLiteError(rawValue: code!)
+            print(sqlite3_errmsg(self.connection))
+            NSLog("Error Code: %d",ATSQLiteError.SQLITE_PREPARE_QUERY_ERROR.rawValue)
+            queryResult.errNum = ATSQLiteError.SQLITE_PREPARE_QUERY_ERROR
             return queryResult
         }
         
@@ -209,6 +234,7 @@ class ATSQLiteManager: NSObject {
             if(sqlite3_step(stmt) != SQLITE_DONE)
             {
                 print(sqlite3_errmsg(self.connection))
+                NSLog("Error Code: %d",ATSQLiteError.SQLITE_STEP_QUERY_ERROR.rawValue)
                 assert(false)
             }
             break;
@@ -218,25 +244,77 @@ class ATSQLiteManager: NSObject {
     
     public func executeQuery(query:QueryString) -> QueryResult
     {
-        return self.prepareQuery(query: query)
+        if(self.connection == nil)
+        {
+            NSLog("Error Code: %d",ATSQLiteError.SQLITE_NULL_CONNECTION_ERROR.rawValue)
+            assert(false)
+        }
+        
+        var retResult:QueryResult? = nil
+        let lock:DispatchSemaphore = DispatchSemaphore(value: 0)
+
+        self._executeQuery(query: query) { (result:QueryResult) in
+            retResult = result
+            lock.signal()
+        }
+        lock.wait()
+        return retResult!
     }
     
-    public func executeTransactionQueryBlock(_ transactionQueryBlock:TransactionQueryBlock)
+    private func _executeQuery(query:QueryString, completion:@escaping (QueryResult)->())
     {
-        let queryTransaction = BeginTransactionQuery()
-        self.executeQuery(query: queryTransaction)
-        var err = transactionQueryBlock()
-        defer {
-            if(err != ATSQLiteError.GG)
-            {
-                let queryTransaction = CommitQuery()
-                self.executeQuery(query: queryTransaction)
-            }else
-            {
-                let queryTransaction = RollbackQuery()
-                self.executeQuery(query: queryTransaction)
+        if(OperationQueue.current == self.operationqueue)
+        {
+            completion(self.prepareQuery(query: query))
+        }else
+        {
+//            self.operationqueue!.addOperation({
+//                self.tranOperationQueue!.isSuspended = true
+//                self.tranOperationQueue!.waitUntilAllOperationsAreFinished()
+//                let result = self.prepareQuery(query: query)
+//                self.tranOperationQueue!.isSuspended = false
+//                completion(result)
+//            })
+            self.operationqueue!.addOperation {
+                completion(self.prepareQuery(query: query))
             }
         }
+    }
+    
+    public func executeTransactionQueryBlock(_ transactionQueryBlock:@escaping TransactionQueryBlock)
+    {
+        if(self.connection == nil)
+        {
+            NSLog("Error Code: %d",ATSQLiteError.SQLITE_NULL_CONNECTION_ERROR.rawValue)
+            assert(false)
+        }
+        
+        let block = {
+            let queryTransaction = BeginTransactionQuery()
+            _ = self.executeQuery(query: queryTransaction)
+            var err = transactionQueryBlock()
+            defer {
+                if(err == false)
+                {
+                    let queryTransaction = CommitQuery()
+                    _ = self.executeQuery(query: queryTransaction)
+                }else
+                {
+                    let queryTransaction = RollbackQuery()
+                    _ = self.executeQuery(query: queryTransaction)
+                }
+            }
+        }
+//        self.tranOperationQueue!.addOperation {
+//            self.operationqueue!.isSuspended = true
+//            self.operationqueue!.waitUntilAllOperationsAreFinished()
+//            block()
+//            self.operationqueue!.isSuspended = false
+//        }
+        self.operationqueue!.addOperation {
+            block()
+        }
+        
     }
     
 }

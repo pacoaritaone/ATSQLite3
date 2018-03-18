@@ -8,16 +8,6 @@
 
 import Foundation
 
-
-let oq = OperationQueue()
-oq.maxConcurrentOperationCount = 1
-
-let ds = DispatchSemaphore(value: 0)
-
-oq.addOperation {
-    ds.wait()
-}
-
 let createTable = {
     let query = GenericQuery(query: """
     CREATE TABLE IF NOT EXISTS student (
@@ -28,12 +18,12 @@ let createTable = {
     )
     """)
     
-    let result = ATSQLiteManager.shared.executeQuery(query: query)
+    _ = ATSQLiteManager.shared.executeQuery(query: query)
 }
 
 let insertTable = {
     let query = InsertQuery(table: "student", attributes: ["name","age","gender"], values: ["paco","11","M"])
-    let result = ATSQLiteManager.shared.executeQuery(query: query!)
+    _ = ATSQLiteManager.shared.executeQuery(query: query!)
 }
 
 let selectTable = {
@@ -42,20 +32,58 @@ let selectTable = {
     NSLog("%@", result.resultSet!)
 }
 
-let transaction = {
-    ATSQLiteManager.shared.executeTransactionQueryBlock({ () -> (ATSQLiteError?) in
+let transactionCommit = {
+    ATSQLiteManager.shared.executeTransactionQueryBlock({ () -> (Bool?) in
         let query = InsertQuery(table: "student", attributes: ["name","age","gender"], values: ["paco","11","F"])
-        let result = ATSQLiteManager.shared.executeQuery(query: query!)
-        if result.errNum != nil { return result.errNum}
-        return ATSQLiteError.GG
+        _ = ATSQLiteManager.shared.executeQuery(query: query!)
+        //if result.errNum != nil { err = true; return err}
+        return false
     })
 }
 
+let transactionRollBack = {
+    ATSQLiteManager.shared.executeTransactionQueryBlock({ () -> (Bool?) in
+        let query = InsertQuery(table: "student", attributes: ["name","age","gender"], values: ["paco","22","F"])
+        _ = ATSQLiteManager.shared.executeQuery(query: query!)
+        //if result.errNum != nil { err = true; return err}
+        return true
+    })
+}
 
-//oq.addOperation(transaction)
-oq.addOperation(selectTable)
+let dropTable = {
+    let query = GenericQuery(query: "DROP TABLE IF EXISTS student")
+    _ = ATSQLiteManager.shared.executeQuery(query: query)
+    
+}
 
-ds.signal()
+func main()
+{
+    
+    dropTable()
+    createTable()
+    
+    let oq = OperationQueue()
+    oq.maxConcurrentOperationCount = 5
+    
+    oq.isSuspended = true
+    oq.waitUntilAllOperationsAreFinished()
+    
+    for _ in 0..<10
+    {
+        oq.addOperation(transactionCommit)
+        oq.addOperation(transactionRollBack)
+    }
+    
+    oq.isSuspended = false
+    
+    DispatchQueue.main.async {
+        sleep(5)
+        selectTable()
+        CFRunLoopStop(CFRunLoopGetCurrent())
+    }
+}
+
+main()
 
 CFRunLoopRun()
 

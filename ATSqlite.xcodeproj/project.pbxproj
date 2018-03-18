@@ -11,7 +11,6 @@
 		008D64C5205BFB8A00CC580E /* ATSQLiteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 008D64C4205BFB8A00CC580E /* ATSQLiteManager.swift */; };
 		008D64CA205BFCF100CC580E /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 008D64C9205BFCF100CC580E /* libsqlite3.tbd */; };
 		008D64D2205BFF4C00CC580E /* QueryString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 008D64D1205BFF4C00CC580E /* QueryString.swift */; };
-		008D64EA205CFA3000CC580E /* QueryBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 008D64E9205CFA3000CC580E /* QueryBlock.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -33,7 +32,6 @@
 		008D64C9205BFCF100CC580E /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
 		008D64CB205BFD0800CC580E /* ATSqlite-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "ATSqlite-Bridging-Header.h"; sourceTree = "<group>"; };
 		008D64D1205BFF4C00CC580E /* QueryString.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueryString.swift; sourceTree = "<group>"; };
-		008D64E9205CFA3000CC580E /* QueryBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueryBlock.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,7 +70,6 @@
 				008D64C4205BFB8A00CC580E /* ATSQLiteManager.swift */,
 				008D64D1205BFF4C00CC580E /* QueryString.swift */,
 				008D64BD205BFB7500CC580E /* main.swift */,
-				008D64E9205CFA3000CC580E /* QueryBlock.swift */,
 			);
 			path = ATSqlite;
 			sourceTree = "<group>";
@@ -144,7 +141,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				008D64EA205CFA3000CC580E /* QueryBlock.swift in Sources */,
 				008D64D2205BFF4C00CC580E /* QueryString.swift in Sources */,
 				008D64C5205BFB8A00CC580E /* ATSQLiteManager.swift in Sources */,
 				008D64BE205BFB7500CC580E /* main.swift in Sources */,
