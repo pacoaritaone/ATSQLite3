@@ -32,28 +32,37 @@ let selectTable = {
     NSLog("%@", result.resultSet!)
 }
 
-let transactionCommit = {
+let transactionCommit = { (idx:Int) in
     ATSQLiteManager.shared.executeTransactionQueryBlock({ () -> (Bool?) in
-        let query = InsertQuery(table: "student", attributes: ["name","age","gender"], values: ["paco","11","F"])
+        let query = InsertQuery(table: "student", attributes: ["name","age","gender"], values: ["paco\(idx)","11","F"])
         _ = ATSQLiteManager.shared.executeQuery(query: query!)
         //if result.errNum != nil { err = true; return err}
         return false
     })
 }
 
-let transactionRollBack = {
+let transactionRollBack = { (idx:Int) in
     ATSQLiteManager.shared.executeTransactionQueryBlock({ () -> (Bool?) in
-        let query = InsertQuery(table: "student", attributes: ["name","age","gender"], values: ["paco","22","F"])
+        let query = InsertQuery(table: "student", attributes: ["name","age","gender"], values: ["paco\(idx)","22","F"])
         _ = ATSQLiteManager.shared.executeQuery(query: query!)
         //if result.errNum != nil { err = true; return err}
         return true
     })
 }
 
+let updateTable = {
+    let query = UpdateQuery(table: "student", constraint: "name = paco1", attributes: ["age"], values: ["111"])
+    _ = ATSQLiteManager.shared.executeQuery(query: query!)
+}
+
+let deleteTable = {
+    let query = DeleteQuery(table: "student", constraint: "name = paco1")
+    _ = ATSQLiteManager.shared.executeQuery(query: query)
+}
+
 let dropTable = {
     let query = GenericQuery(query: "DROP TABLE IF EXISTS student")
     _ = ATSQLiteManager.shared.executeQuery(query: query)
-    
 }
 
 func main()
@@ -68,10 +77,14 @@ func main()
     oq.isSuspended = true
     oq.waitUntilAllOperationsAreFinished()
     
-    for _ in 0..<10
+    for idx in 0..<10
     {
-        oq.addOperation(transactionCommit)
-        oq.addOperation(transactionRollBack)
+        oq.addOperation({
+            transactionCommit(idx)
+        })
+        oq.addOperation({
+            transactionRollBack(idx)
+        })
     }
     
     oq.isSuspended = false

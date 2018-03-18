@@ -22,7 +22,6 @@ struct QueryResult {
     var rowId:Int?
 }
 
-
 public enum ATSQLiteError:Int {
     case TRANSACTION_ERROR
     case SQLITE_OPEN_CONNECTION_ERROR
@@ -34,9 +33,6 @@ public enum ATSQLiteError:Int {
     
 }
 
-
-
-
 public enum ATSQLiteQueryType:Int32{
     case Unknown
     case Select
@@ -47,13 +43,9 @@ public enum ATSQLiteQueryType:Int32{
     case Drop
 }
 
-
 class ATSQLiteManager: NSObject {
     private var connection:OpaquePointer?
     private var stmt:OpaquePointer?
-    private var errString:UnsafeMutablePointer<Int8>?
-
-//    private var tranOperationQueue:OperationQueue?
     private var operationqueue:OperationQueue?
     
     public static let shared:ATSQLiteManager = {
@@ -64,8 +56,6 @@ class ATSQLiteManager: NSObject {
     public override init()
     {
         super.init()
-//        self.tranOperationQueue = OperationQueue()
-//        self.tranOperationQueue?.maxConcurrentOperationCount = 1
         self.operationqueue = OperationQueue()
         self.operationqueue?.maxConcurrentOperationCount = 1
     }
@@ -268,16 +258,9 @@ class ATSQLiteManager: NSObject {
             completion(self.prepareQuery(query: query))
         }else
         {
-//            self.operationqueue!.addOperation({
-//                self.tranOperationQueue!.isSuspended = true
-//                self.tranOperationQueue!.waitUntilAllOperationsAreFinished()
-//                let result = self.prepareQuery(query: query)
-//                self.tranOperationQueue!.isSuspended = false
-//                completion(result)
-//            })
-            self.operationqueue!.addOperation {
+            self.operationqueue!.addOperation({
                 completion(self.prepareQuery(query: query))
-            }
+            })
         }
     }
     
@@ -305,15 +288,10 @@ class ATSQLiteManager: NSObject {
                 }
             }
         }
-//        self.tranOperationQueue!.addOperation {
-//            self.operationqueue!.isSuspended = true
-//            self.operationqueue!.waitUntilAllOperationsAreFinished()
-//            block()
-//            self.operationqueue!.isSuspended = false
-//        }
-        self.operationqueue!.addOperation {
+        
+        self.operationqueue!.addOperation({
             block()
-        }
+        })
         
     }
     
