@@ -173,7 +173,7 @@ class UpdateQuery: QueryString
         self.attributes = attributes
         self.values = values
         
-        var sql = "UPDATE %@ SET %@ %@"
+        let sql = "UPDATE %@ SET %@ %@"
         
         if(attributes.count == 0 || values.count == 0 || attributes.count != values.count)
         {
@@ -193,7 +193,7 @@ class UpdateQuery: QueryString
             }
         }
         
-        sql = String(format: sql, table, attributesValuesToString(attributes, values), _constraint!)
+        self.string = String(format: sql, table, attributesValuesToString(attributes, values), _constraint!)
     }
     
     private override init(){}

@@ -67,7 +67,8 @@ class ATSQLiteManager: NSObject {
         
         if(sqlite3_close(self.connection) != SQLITE_OK)
         {
-            NSLog("Error Code: %d",ATSQLiteError.SQLITE_CLOSE_CONNECTION_ERROR.rawValue)
+            let errMsg = String(format: "Error Code: %d", ATSQLiteError.SQLITE_CLOSE_CONNECTION_ERROR.rawValue)
+            ATSQLiteLog(.debug, errMsg)
             assert(false)
         }
     }
@@ -81,7 +82,8 @@ class ATSQLiteManager: NSObject {
         
         if(sqlite3_open(filePath, &self.connection) != SQLITE_OK)
         {
-            NSLog("Error Code: %d",ATSQLiteError.SQLITE_OPEN_CONNECTION_ERROR.rawValue)
+            let errMsg = String(format: "Error Code: %d", ATSQLiteError.SQLITE_OPEN_CONNECTION_ERROR.rawValue)
+            ATSQLiteLog(.debug, errMsg)
             assert(false)
         }
         
@@ -173,8 +175,9 @@ class ATSQLiteManager: NSObject {
         
         if(flag != SQLITE_DONE)
         {
-            print(sqlite3_errmsg(self.connection))
-            NSLog("Error Code: %d",ATSQLiteError.SQLITE_CREATE_RESULTSET_ERROR.rawValue)
+            ATSQLiteLog(.debug, String(describing: sqlite3_errmsg(self.connection)))
+            let errMsg = String(format: "Error Code: %d", ATSQLiteError.SQLITE_CREATE_RESULTSET_ERROR.rawValue)
+            ATSQLiteLog(.debug, errMsg)
             assert(false)
         }
     }
@@ -183,8 +186,9 @@ class ATSQLiteManager: NSObject {
     {
         if(sqlite3_step(stmt) != SQLITE_DONE)
         {
-            print(sqlite3_errmsg(self.connection))
-            NSLog("Error Code: %d",ATSQLiteError.SQLITE_STEP_QUERY_ERROR.rawValue)
+            ATSQLiteLog(.debug, String(describing: sqlite3_errmsg(self.connection)))
+            let errMsg = String(format: "Error Code: %d", ATSQLiteError.SQLITE_STEP_QUERY_ERROR.rawValue)
+            ATSQLiteLog(.debug, errMsg)
             assert(false)
         }else
         {
@@ -207,8 +211,9 @@ class ATSQLiteManager: NSObject {
         
         if(code != SQLITE_OK && code != SQLITE_ROW && code != SQLITE_DONE)
         {
-            print(sqlite3_errmsg(self.connection))
-            NSLog("Error Code: %d",ATSQLiteError.SQLITE_PREPARE_QUERY_ERROR.rawValue)
+            ATSQLiteLog(.debug, String(cString: sqlite3_errmsg(self.connection)))
+            let errMsg = String(format: "Error Code: %d", ATSQLiteError.SQLITE_PREPARE_QUERY_ERROR.rawValue)
+            ATSQLiteLog(.debug, errMsg)
             queryResult.errNum = ATSQLiteError.SQLITE_PREPARE_QUERY_ERROR
             return queryResult
         }
@@ -223,8 +228,9 @@ class ATSQLiteManager: NSObject {
         case .Update,.Delete,.Create,.Drop,.Unknown:
             if(sqlite3_step(stmt) != SQLITE_DONE)
             {
-                print(sqlite3_errmsg(self.connection))
-                NSLog("Error Code: %d",ATSQLiteError.SQLITE_STEP_QUERY_ERROR.rawValue)
+                ATSQLiteLog(.debug, String(cString: sqlite3_errmsg(self.connection)))
+                let errMsg = String(format: "Error Code: %d", ATSQLiteError.SQLITE_STEP_QUERY_ERROR.rawValue)
+                ATSQLiteLog(.debug, errMsg)
                 assert(false)
             }
             break;
@@ -236,7 +242,8 @@ class ATSQLiteManager: NSObject {
     {
         if(self.connection == nil)
         {
-            NSLog("Error Code: %d",ATSQLiteError.SQLITE_NULL_CONNECTION_ERROR.rawValue)
+            let errMsg = String(format: "Error Code: %d", ATSQLiteError.SQLITE_NULL_CONNECTION_ERROR.rawValue)
+            ATSQLiteLog(.debug, errMsg)
             assert(false)
         }
         
@@ -268,7 +275,8 @@ class ATSQLiteManager: NSObject {
     {
         if(self.connection == nil)
         {
-            NSLog("Error Code: %d",ATSQLiteError.SQLITE_NULL_CONNECTION_ERROR.rawValue)
+            let errMsg = String(format: "Error Code: %d", ATSQLiteError.SQLITE_NULL_CONNECTION_ERROR.rawValue)
+            ATSQLiteLog(.debug, errMsg)
             assert(false)
         }
         

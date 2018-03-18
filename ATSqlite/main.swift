@@ -51,7 +51,7 @@ let transactionRollBack = { (idx:Int) in
 }
 
 let updateTable = {
-    let query = UpdateQuery(table: "student", constraint: "name = paco1", attributes: ["age"], values: ["111"])
+    let query = UpdateQuery(table: "student", constraint: "name = 'paco1'", attributes: ["age"], values: ["111"])
     _ = ATSQLiteManager.shared.executeQuery(query: query!)
 }
 
@@ -77,6 +77,7 @@ func main()
     oq.isSuspended = true
     oq.waitUntilAllOperationsAreFinished()
     
+    //test mult-threading
     for idx in 0..<10
     {
         oq.addOperation({
@@ -91,6 +92,7 @@ func main()
     
     DispatchQueue.main.async {
         sleep(5)
+        updateTable()
         selectTable()
         CFRunLoopStop(CFRunLoopGetCurrent())
     }
